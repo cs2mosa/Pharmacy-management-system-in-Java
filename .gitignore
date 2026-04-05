@@ -33,6 +33,7 @@ build/
 
 ### VS Code ###
 .vscode/
-
+/target
+/out
 ### Mac OS ###
 .DS_Store
