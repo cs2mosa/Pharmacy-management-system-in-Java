@@ -1,11 +1,20 @@
 package Service_Interfaces;
 
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.OptionalInt;
 import java.util.Set;
 
 import Class_model.Casher;
 import Class_model.Pharmacist;
+import Class_model.Role;
 import Class_model.User;
+
+import Http.ApiModels;
+import Http.BaseService;
+import Http.PharmacyJsonMapper;
 
 /**
  * UserRepository is an interface that defines the contract for managing User entities.
@@ -53,87 +62,106 @@ abstract interface UserRepository {
     User GetByID(int ID) ;
 }
 
-class User_Repository implements UserRepository {
+class User_Repository extends BaseService implements UserRepository {
 
     private static User_Repository instance = null;
-    private static Set<User> USERS; // Using Set for better search complexity
 
-    private User_Repository(){
-        // Private constructor to prevent instantiation from outside
-        USERS = new HashSet<>();
+    private User_Repository() {
     }
 
     public static User_Repository GetInstance(){
         if (instance == null) {
             instance = new User_Repository();
-            return instance;
-        } else {
-            return instance;
         }
+        return instance;
+    }
+
+    /** Server-side credential check (password never returned on GET). */
+    public ApiModels.MUser apiLogin(String username, String password) {
+        var login = new ApiModels.MLogin();
+        login.username = username;
+        login.password = password;
+        return postForJson("/api/users/login", login, ApiModels.MUser.class).orElse(null);
     }
 
     @Override
     public int Add(User user) throws IllegalArgumentException {
-        // Implementation to add a user
-
         if (user == null) throw new IllegalArgumentException("User cannot be null");
-        if (user.getUsername() == null || user.getPassword() == null || user.getUsername().isEmpty() || user.getPassword().isEmpty()) throw new IllegalArgumentException("Username and password cannot be null nor empty");
-        if(!USERS.contains(user) && GetByUsername(user.getUsername()) == null) {
-            if(user instanceof Pharmacist){
-                USERS.add((Pharmacist)user);
-            }else if(user instanceof Casher){
-                USERS.add((Casher)user);
-            }
-            return user.getID();
-        }else{
+        if (user.getUsername() == null || user.getPassword() == null || user.getUsername().isEmpty() || user.getPassword().isEmpty()) {
+            throw new IllegalArgumentException("Username and password cannot be null nor empty");
+        }
+        if (!(user instanceof Pharmacist) && !(user instanceof Casher)) {
             return -1;
         }
+        if (GetByUsername(user.getUsername()) != null) {
+            return -1;
+        }
+        List<Integer> roleIds = new ArrayList<>();
+        for (Role r : user.getRoles()) {
+            int id = PharmacyJsonMapper.roleIdByName(this, gson, r.getRoleName());
+            if (id > 0) {
+                roleIds.add(id);
+            }
+        }
+        String kind = user instanceof Pharmacist ? "Pharmacist" : "Casher";
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("username", user.getUsername());
+        body.put("password", user.getPassword());
+        body.put("email", user.getUserEmail());
+        body.put("phone", user.getPhoneNumber());
+        body.put("userKind", kind);
+        body.put("roleIds", roleIds);
+        if (user instanceof Casher c) {
+            body.put("salary", c.getSalary());
+        } else if (user instanceof Pharmacist p) {
+            body.put("salary", p.getSalary());
+        } else {
+            body.put("salary", 0);
+        }
+        body.put("jobType", kind);
+        OptionalInt id = postForInt("/api/users", body);
+        return id.isPresent() ? id.getAsInt() : -1;
     }
 
     @Override
     public int Delete(int UserId)  throws IllegalArgumentException{
-        // Implementation to delete a user
         User user_indata = GetByID(UserId);
-        if (user_indata == null)throw new IllegalArgumentException("User cannot be null");
-        if(USERS.contains(user_indata) == false) {
-            return -1; // User not found, cannot delete
+        if (user_indata == null) {
+            throw new IllegalArgumentException("User cannot be null");
         }
-        USERS.remove(user_indata);
-        return 0;
+        return delete("/api/users/" + UserId) ? 0 : -1;
     }
 
     @Override
     public int Update(User Newuser)  throws IllegalArgumentException{
-        // Implementation to update a user
-        if(Delete(Newuser.getID()) == -1) {
-            return -1; // User not found, cannot update
-        }
-        return Add(Newuser);
+        Map<String, Object> patch = new LinkedHashMap<>();
+        patch.put("username", Newuser.getUsername());
+        patch.put("password", Newuser.getPassword());
+        patch.put("email", Newuser.getUserEmail());
+        patch.put("phone", Newuser.getPhoneNumber());
+        patch.put("isActive", Newuser.getactive());
+        return putJson("/api/users/" + Newuser.getID(), patch) ? Newuser.getID() : -1;
     }
 
     @Override
     public User GetByUsername(String username)  throws IllegalArgumentException{
-        // Implementation to get a user by username
-        if(username == null || username.isEmpty()) throw new IllegalArgumentException("Username cannot be null nor empty");
-        if(USERS.isEmpty()) return null;
-        for (User user : USERS) {
-            if(user.getUsername().equals(username)){
-                return user;
-            }
+        if(username == null || username.isEmpty()) {
+            throw new IllegalArgumentException("Username cannot be null nor empty");
         }
-        return null;
+        var m = getJson("/api/users/by-username?username=" + enc(username), ApiModels.MUser.class).orElse(null);
+        if (m == null) {
+            return null;
+        }
+        return PharmacyJsonMapper.toUser(gson, this, m, "");
     }
 
     @Override
     public User GetByID(int ID) {
-        // Implementation to get a user by ID
-        if(USERS.isEmpty()) return null;
-        for (User user : USERS) {
-            if (user.getID() == ID) {
-                return user;
-            }
+        var m = getJson("/api/users/" + ID, ApiModels.MUser.class).orElse(null);
+        if (m == null) {
+            return null;
         }
-        return null;
+        return PharmacyJsonMapper.toUser(gson, this, m, "");
     }
 
 }

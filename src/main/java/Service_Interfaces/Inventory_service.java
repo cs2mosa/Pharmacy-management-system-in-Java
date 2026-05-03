@@ -149,13 +149,14 @@ public class Inventory_service implements InventoryServiceInterface{
     //works fine
     @Override
     public int updateStock(String item, int quantity){
-        //other functionalities to be added here.
-        if(Items_Repository.GetInstance().GetItemByName(item) !=null && quantity > 0){
-            Items_Repository.GetInstance().GetItemByName(item).setQuantity(quantity);
-            return 0;
-        }else{
-            return -1;
+        var it = Items_Repository.GetInstance().GetItemByName(item);
+        if (it != null && it.getMedicineId() > 0 && quantity >= 0) {
+            if (Items_Repository.GetInstance().patchStock(it.getMedicineId(), quantity)) {
+                it.setQuantity(quantity);
+                return 0;
+            }
         }
+        return -1;
     }    
 
     //works fine

@@ -179,17 +179,27 @@ public class User_Service implements UserServiceInterface {
     //works fine.
     @Override
     public boolean AuthenticateUser(User user) {
-        // Implementation for authenticating a user
         try {
-            User temp = User_Repository.GetInstance().GetByUsername(user.getUsername());
-            if (user == null || user.getUsername() == null || user.getPassword() == null) throw new IllegalArgumentException("Username or password cannot be null");
-            if (user.getUsername().isEmpty() || user.getPassword().isEmpty()) throw new IllegalArgumentException("Username or password cannot be empty");
-            if(temp == null) throw new IllegalArgumentException("User not found");
-            return (!(temp instanceof Pharmacist) || temp.getPassword().equals(((Pharmacist) user).getPassword())) && (!(temp instanceof Casher) || temp.getUsername().equals(((Casher) user).getUsername()));
+            if (user == null || user.getUsername() == null || user.getPassword() == null) {
+                throw new IllegalArgumentException("Username or password cannot be null");
+            }
+            if (user.getUsername().isEmpty() || user.getPassword().isEmpty()) {
+                throw new IllegalArgumentException("Username or password cannot be empty");
+            }
+            var logged = User_Repository.GetInstance().apiLogin(user.getUsername(), user.getPassword());
+            if (logged == null) {
+                return false;
+            }
+            if (user instanceof Pharmacist) {
+                return "Pharmacist".equalsIgnoreCase(logged.userKind);
+            }
+            if (user instanceof Casher) {
+                return "Casher".equalsIgnoreCase(logged.userKind) || "Cashier".equalsIgnoreCase(logged.userKind);
+            }
+            return false;
         } catch (Exception e) {
-            // handle exception
             System.out.println("Error authenticating user: " + e.getMessage());
-            return false; // Return false if an error occurs
+            return false;
         }
     }
 }

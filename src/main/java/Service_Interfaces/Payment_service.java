@@ -115,7 +115,7 @@ public class Payment_service implements PaymentServiceInterface{
     //works fine
     @Override
     public int UpdatePayment(int PatientId, String query, Object value) {
-        // Implementation for updating a payment
+        // First argument is the payment row id (legacy parameter name retained for interface stability).
         Payment payment = Payment_Repository.GetInstance().GetPayment(PatientId);
         if (payment == null || query == null) return -1;
         switch (query) {
@@ -143,25 +143,41 @@ public class Payment_service implements PaymentServiceInterface{
         return Payment_Repository.GetInstance().UpdatePayment(PatientId, payment);
     }
 
-    //order id is the payment id
-    public int ProcessPayment(int PatientId, int PaymentId){
-        Payment temppay = Payment_Repository.GetInstance().GetPayment(PaymentId);
+    /**
+     * {@code orderOrPaymentId} may be either the {@code OrderID} (legacy UI) or the {@code PaymentID} from the API.
+     */
+    public int ProcessPayment(int PatientId, int orderOrPaymentId){
+        Payment temppay = Payment_Repository.GetInstance().GetPayment(orderOrPaymentId);
+        if (temppay == null) {
+            for (Payment p : Payment_Repository.GetInstance().GetById(PatientId)) {
+                if (p.getOrder() != null && p.getOrder().getOrderId() == orderOrPaymentId) {
+                    temppay = p;
+                    break;
+                }
+            }
+        }
         Patient tempPatient = Patient_Repository.getInstance().GetPatient(PatientId);
-        if(tempPatient == null  || temppay == null) return -1; //failed
+        if(tempPatient == null  || temppay == null) {
+            return -1;
+        }
 
         if(tempPatient.GetBalance() >= temppay.getOrder().getTotalPrice()){
-            //check if the payment is already paid
-            if(temppay.getStatus() == "Paid" || temppay.getStatus() == "Cancelled"){
-                return -1;//already paid
+            if("Paid".equals(temppay.getStatus()) || "Cancelled".equals(temppay.getStatus())){
+                return -1;
             }
-            temppay.setStatus("Paid");//update the payment status to paid
+            temppay.setStatus("Paid");
             tempPatient.SetBalance(tempPatient.GetBalance() - temppay.getOrder().getTotalPrice());
-            Order_Repository.getInstance().GetById(PaymentId).setCheckedBy("Casher");
+            int orderId = temppay.getOrder().getOrderId();
+            var ord = Order_Repository.getInstance().GetById(orderId);
+            if (ord != null) {
+                ord.setCheckedBy("Casher");
+                ord.setStatus("Paid");
+                Order_Repository.getInstance().UpdateOrder(PatientId, ord);
+            }
             Payment_Repository.GetInstance().UpdatePayment(PatientId, temppay);
             Patient_Repository.getInstance().UpdatePatient(PatientId, tempPatient);
-            Order_Repository.getInstance().GetById(PaymentId).setStatus("Paid");
             Admin.setTotalIncome(Admin.gettotalIncome() + (tempPatient.GetBalance() - temppay.getOrder().getTotalPrice()));
-            return PaymentId; //successfully processed payment
+            return temppay.getID();
         }
         else{
             return -1;
