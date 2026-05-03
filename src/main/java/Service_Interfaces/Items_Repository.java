@@ -158,7 +158,7 @@ class Items_Repository extends BaseService implements ItemsRepository{
     @Override
     public List<Item> GetAllItems(){
         Type t = BaseService.listOf(ApiModels.MMedicine.class);
-        List<ApiModels.MMedicine> list = getJson("/api/medicines", t).orElse(List.of());
+        List<ApiModels.MMedicine> list = (List<ApiModels.MMedicine>) getJson("/api/medicines", t).orElse(List.of());
         List<Item> out = new ArrayList<>();
         for (var m : list) {
             out.add(PharmacyJsonMapper.toItem(m));
@@ -174,7 +174,7 @@ class Items_Repository extends BaseService implements ItemsRepository{
     @Override
     public List<Item> GetItemsByCategory(String category){
         Type t = BaseService.listOf(ApiModels.MMedicine.class);
-        List<ApiModels.MMedicine> list = getJson("/api/medicines/by-category?category=" + enc(category), t).orElse(List.of());
+        List<ApiModels.MMedicine> list = (List<ApiModels.MMedicine>) getJson("/api/medicines/by-category?category=" + enc(category), t).orElse(List.of());
         List<Item> out = new ArrayList<>();
         for (var m : list) {
             out.add(PharmacyJsonMapper.toItem(m));

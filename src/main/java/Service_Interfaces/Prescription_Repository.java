@@ -37,7 +37,6 @@ abstract interface PrescriptionRepository {
 
     /**
      * Finds and retrieves a list of prescriptions associated with a specific patient's name.
-     * @param patientName The name of the patient whose prescriptions are to be retrieved.
      * @return A list of prescriptions matching the given patient name. or null if not found.
      * @throws IllegalArgumentException if the patient name is null or empty.
      */
@@ -121,7 +120,7 @@ class Prescription_Repository extends BaseService implements PrescriptionReposit
     @Override
     public List<Prescription> findByPatientID(int patientId) {
         Type t = BaseService.listOf(ApiModels.MPrescription.class);
-        List<ApiModels.MPrescription> list = getJson("/api/prescriptions/patient/" + patientId, t).orElse(List.of());
+        List<ApiModels.MPrescription> list = (List<ApiModels.MPrescription>) getJson("/api/prescriptions/patient/" + patientId, t).orElse(List.of());
         return mapList(list);
     }
 
@@ -129,7 +128,7 @@ class Prescription_Repository extends BaseService implements PrescriptionReposit
     public List<Prescription> findAll()  throws IllegalArgumentException{
         try {
             Type t = BaseService.listOf(ApiModels.MPrescription.class);
-            List<ApiModels.MPrescription> list = getJson("/api/prescriptions", t).orElse(List.of());
+            List<ApiModels.MPrescription> list = (List<ApiModels.MPrescription>) getJson("/api/prescriptions", t).orElse(List.of());
             if (list.isEmpty()) {
                 throw new IllegalArgumentException("No prescriptions found.");
             }

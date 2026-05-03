@@ -45,7 +45,6 @@ abstract interface PaymentRepository {
     /**
      * Retrieves a payment from the repository by its unique identifier.
      * 
-     * @param PaymentId The unique identifier of the payment to be retrieved.
      * @return The Payment object corresponding to the given PaymentId.
      */
     List<Payment> GetById(int PatientId); 
@@ -127,7 +126,7 @@ class Payment_Repository extends BaseService implements PaymentRepository {
     @Override
     public List<Payment> GetById(int PatientId) {
         Type t = BaseService.listOf(ApiModels.MPayment.class);
-        List<ApiModels.MPayment> list = getJson("/api/payments/patient/" + PatientId, t).orElse(List.of());
+        List<ApiModels.MPayment> list = (List<ApiModels.MPayment>) getJson("/api/payments/patient/" + PatientId, t).orElse(List.of());
         List<Payment> out = new ArrayList<>();
         for (var m : list) {
             out.add(mapPayment(m));
@@ -138,7 +137,7 @@ class Payment_Repository extends BaseService implements PaymentRepository {
     @Override  
     public List<Payment> GetAllPayments() {
         Type t = BaseService.listOf(ApiModels.MPayment.class);
-        List<ApiModels.MPayment> list = getJson("/api/payments", t).orElse(List.of());
+        List<ApiModels.MPayment> list = (List<ApiModels.MPayment>) getJson("/api/payments", t).orElse(List.of());
         List<Payment> out = new ArrayList<>();
         for (var m : list) {
             out.add(mapPayment(m));

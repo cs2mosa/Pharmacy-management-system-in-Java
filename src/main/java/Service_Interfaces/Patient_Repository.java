@@ -145,7 +145,7 @@ class Patient_Repository extends BaseService implements PatientRepository {
     @Override
     public Set<Patient> GetAllPatients() {
         Type t = BaseService.listOf(ApiModels.MPatient.class);
-        List<ApiModels.MPatient> list = getJson("/api/patients", t).orElse(List.of());
+        List<ApiModels.MPatient> list = (List<ApiModels.MPatient>) getJson("/api/patients", t).orElse(List.of());
         Set<Patient> set = new HashSet<>();
         for (var mp : list) {
             Patient p = PharmacyJsonMapper.toPatient(gson, this, mp);

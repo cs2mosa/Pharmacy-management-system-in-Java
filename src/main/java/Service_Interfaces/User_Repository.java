@@ -40,7 +40,6 @@ abstract interface UserRepository {
 
     /**
      * Deletes a user from the repository.
-     * @param user The User object to be removed.
      * @return 0 if the user was successfully deleted, -1 if the user does not exist.
      * @throws IllegalArgumentException if the user is null or has invalid properties.
      */

@@ -40,7 +40,6 @@ abstract interface OrderRepository {
 
     /**
      * Updates an existing order in the repository.
-     * @param orderId The ID of the order to be updated.
      * @param Neworder The field or property to be updated.
      * @return 0 on success, -1 if order not found.
      * @throws IllegalArgumentException if the order ID is invalid or the new order is null.
@@ -142,7 +141,7 @@ class Order_Repository extends BaseService implements OrderRepository{
     @Override
     public List<Order> GetByName(String PatientName) throws IllegalArgumentException {
         Type t = BaseService.listOf(ApiModels.MPatient.class);
-        List<ApiModels.MPatient> patients = getJson("/api/patients", t).orElse(List.of());
+        List<ApiModels.MPatient> patients = (List<ApiModels.MPatient>) getJson("/api/patients", t).orElse(List.of());
         for (var p : patients) {
             if (p.username != null && p.username.equals(PatientName)) {
                 return GetOrdersForPatient(p.userId);
@@ -161,7 +160,7 @@ class Order_Repository extends BaseService implements OrderRepository{
     @Override
     public List<Order> GetHistory() {
         Type t = BaseService.listOf(ApiModels.MOrder.class);
-        List<ApiModels.MOrder> list = getJson("/api/orders/history", t).orElse(List.of());
+        List<ApiModels.MOrder> list = (List<ApiModels.MOrder>) getJson("/api/orders/history", t).orElse(List.of());
         List<Order> out = new ArrayList<>();
         for (var o : list) {
             out.add(PharmacyJsonMapper.toOrder(o));
@@ -172,7 +171,7 @@ class Order_Repository extends BaseService implements OrderRepository{
     @Override
     public List<Order> GetOrdersForPatient(int patientId) {
         Type t = BaseService.listOf(ApiModels.MOrder.class);
-        List<ApiModels.MOrder> list = getJson("/api/orders/patient/" + patientId, t).orElse(List.of());
+        List<ApiModels.MOrder> list = (List<ApiModels.MOrder>) getJson("/api/orders/patient/" + patientId, t).orElse(List.of());
         List<Order> out = new ArrayList<>();
         for (var o : list) {
             out.add(PharmacyJsonMapper.toOrder(o));
