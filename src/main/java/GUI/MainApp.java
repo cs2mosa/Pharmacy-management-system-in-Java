@@ -2,7 +2,6 @@ package GUI;
 
 import Class_model.Item;
 import Service_Interfaces.Inventory_service;
-import Service_Interfaces.Patient_Service;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
@@ -80,42 +79,46 @@ public class MainApp extends Application {
     }
 
     public static void main(String[] args) {
-        Item item1 = new Item.builder()
-                .setMedicName("Medic1")
-                .setPrice(10.0)
-                .setExpireDate("31/12/2025")
-                .setQuantity(10)
-                .setUsage("Take 1 tablet every 6 hours")
-                .setSideEffects(new HashSet<>())
-                .setHealingEffects(new HashSet<>())
-                .setCategory("cats")
-                .build();
+        try {
+            Item item1 = new Item.builder()
+                    .setMedicName("Medic1")
+                    .setPrice(10.0)
+                    .setExpireDate("31/12/2026")
+                    .setQuantity(10)
+                    .setUsage("Take 1 tablet every 6 hours")
+                    .setSideEffects(new HashSet<>())
+                    .setHealingEffects(new HashSet<>())
+                    .setCategory("cats")
+                    .build();
 
-        Item item2 = new Item.builder()
-                .setMedicName("Medic2")
-                .setPrice(10.0)
-                .setExpireDate("31/12/2024")
-                .setQuantity(10)
-                .setUsage("Take 1 tablet every 12 hours")
-                .setSideEffects(new HashSet<>())
-                .setHealingEffects(new HashSet<>())
-                .setCategory("cats")
-                .build();
+            Item item2 = new Item.builder()
+                    .setMedicName("Medic2")
+                    .setPrice(10.0)
+                    .setExpireDate("31/12/2026")
+                    .setQuantity(10)
+                    .setUsage("Take 1 tablet every 12 hours")
+                    .setSideEffects(new HashSet<>())
+                    .setHealingEffects(new HashSet<>())
+                    .setCategory("cats")
+                    .build();
 
-        Item item3 = new Item.builder()
-                .setMedicName("Medic3")
-                .setPrice(10.0)
-                .setExpireDate("31/12/2025")
-                .setQuantity(10)
-                .setUsage("Take 1 tablet every 6 hours")
-                .setSideEffects(new HashSet<>())
-                .setHealingEffects(new HashSet<>())
-                .setCategory("cats")
-                .build();
+            Item item3 = new Item.builder()
+                    .setMedicName("Medic3")
+                    .setPrice(10.0)
+                    .setExpireDate("31/12/2026")
+                    .setQuantity(10)
+                    .setUsage("Take 1 tablet every 6 hours")
+                    .setSideEffects(new HashSet<>())
+                    .setHealingEffects(new HashSet<>())
+                    .setCategory("cats")
+                    .build();
 
-        Inventory_service.getInstance().AddNewItem(item1);
-        Inventory_service.getInstance().AddNewItem(item2);
-        Inventory_service.getInstance().AddNewItem(item3);
+            Inventory_service.getInstance().AddNewItem(item1);
+            Inventory_service.getInstance().AddNewItem(item2);
+            Inventory_service.getInstance().AddNewItem(item3);
+        } catch (Exception ex) {
+            System.err.println("Optional demo seed skipped (is the Pharmacy API running and the database migrated?). " + ex.getMessage());
+        }
 
         launch(args);
     }
