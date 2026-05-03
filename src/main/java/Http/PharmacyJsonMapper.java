@@ -21,7 +21,7 @@ public final class PharmacyJsonMapper {
             return new HashSet<>();
         }
         Type t = BaseService.listOf(ApiModels.MRole.class);
-        List<ApiModels.MRole> all = http.getJson("/api/roles", t).orElse(List.of());
+        List<ApiModels.MRole> all = (List<ApiModels.MRole>) http.getJson("/api/roles", t).orElse(List.of());
         var byId = all.stream().collect(Collectors.toMap(r -> r.roleId, r -> r));
         var set = new HashSet<Role>();
         for (int id : roleIds) {
@@ -35,7 +35,7 @@ public final class PharmacyJsonMapper {
 
     public static int roleIdByName(BaseService http, Gson gson, String roleName) {
         Type t = BaseService.listOf(ApiModels.MRole.class);
-        List<ApiModels.MRole> all = http.getJson("/api/roles", t).orElse(List.of());
+        List<ApiModels.MRole> all = (List<ApiModels.MRole>) http.getJson("/api/roles", t).orElse(List.of());
         for (var r : all) {
             if (roleName.equalsIgnoreCase(r.roleName)) {
                 return r.roleId;
