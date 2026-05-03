@@ -19,6 +19,10 @@ public class Order {
     /** Unique identifier for the order. */
     private int orderId;
 
+    /** For JSON / API hydration */
+    public Order() {
+    }
+
     /** Date when the order was placed. */
     private String orderDate;
 
@@ -91,6 +95,12 @@ public class Order {
             this.orderId = orderId;
             is_set_id = true;
         }
+    }
+
+    /** Assigns the id returned from the server after insert (overrides client-generated ids). */
+    public void assignOrderIdFromApi(int id) {
+        this.orderId = id;
+        this.is_set_id = true;
     }
 
     /**
