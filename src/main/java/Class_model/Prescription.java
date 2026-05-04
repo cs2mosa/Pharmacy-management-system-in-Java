@@ -7,6 +7,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class Prescription {
+    public Prescription() {
+    }
+
     private int ID;
     private String PatientName; // The name of the patient for whom the prescription is issued.
     private Pharmacist issuedBy; // The pharmacist who issued the prescription.

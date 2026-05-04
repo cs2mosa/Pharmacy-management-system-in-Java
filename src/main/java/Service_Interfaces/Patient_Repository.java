@@ -1,9 +1,20 @@
 package Service_Interfaces;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.OptionalInt;
 import java.util.Set;
 
+import java.lang.reflect.Type;
+
 import Class_model.Patient;
+import Class_model.Role;
+
+import Http.ApiModels;
+import Http.BaseService;
+import Http.PharmacyJsonMapper;
 
 /**
  * The PatientRepository interface defines the contract for managing patient records.
@@ -50,70 +61,98 @@ abstract interface PatientRepository {
     Set<Patient> GetAllPatients();
 }
 
-class Patient_Repository implements PatientRepository {
-    // Singleton instance of Patient_Repository
+class Patient_Repository extends BaseService implements PatientRepository {
     private static Patient_Repository instance = null;
-    // Set to store patients
-    private Set<Patient> PATIENTS; // Using Set for better search complexity
 
-    // Private constructor to prevent instantiation from outside
     private Patient_Repository() {
-        PATIENTS = new HashSet<>(); 
     }
 
-    // Method to get the singleton instance of Patient_Repository
     public static Patient_Repository getInstance() {
         if (instance == null) {
             instance = new Patient_Repository();
         }
         return instance;
     }
-    //works fine
+
     @Override
     public int AddPatient(Patient patient)  throws IllegalArgumentException{
-        if(patient == null || !(patient instanceof Patient)) throw new IllegalArgumentException("Patient not found, you should add patient first or check the id");
-        if(!PATIENTS.contains(patient)){
-            PATIENTS.add(patient);
-            return patient.getID();
-        }else{
-            return -1;
+        if(patient == null || !(patient instanceof Patient)) {
+            throw new IllegalArgumentException("Patient not found, you should add patient first or check the id");
         }
-    }
-    //works fine
-    @Override
-    public int RemovePatient(int PatientID)  throws IllegalArgumentException{
-        if(GetPatient(PatientID) == null) throw new IllegalArgumentException("Patient not found, you should add patient first or check the id");
-        if(PATIENTS.contains(GetPatient(PatientID)) && GetPatient(PatientID) != null){
-            PATIENTS.remove(GetPatient(PatientID));
-            return 0; // Return 0 if successful
-        }else{
-            return -1; // Return -1 if the patient was not found
-        }
-    }
-    //works fine
-    @Override
-    public int UpdatePatient(int PatientID, Patient Newpatient)  throws IllegalArgumentException{
-        if(RemovePatient(PatientID) == -1) 
-            return -1; // Return -1 if the patient was not found
-        return AddPatient(Newpatient);
-    }
-    //works fine
-    @Override
-    public Patient GetPatient(int PatientID) {
-        //implementation for getting a patient by ID
-        if(PATIENTS.isEmpty()) return null; // Return null if the set is empty
-        for(Patient p : PATIENTS){
-            if(p.getID() == PatientID){
-                return p;
+        List<Integer> roleIds = new ArrayList<>();
+        for (Role r : patient.getRoles()) {
+            int id = PharmacyJsonMapper.roleIdByName(this, gson, r.getRoleName());
+            if (id > 0) {
+                roleIds.add(id);
             }
         }
-        return null; // Return null if not found
+        if (roleIds.isEmpty()) {
+            int pid = PharmacyJsonMapper.roleIdByName(this, gson, "Patient");
+            if (pid > 0) {
+                roleIds.add(pid);
+            }
+        }
+        List<String> allergies = patient.getAllergies() == null ? List.of() : new ArrayList<>(patient.getAllergies());
+        var body = new LinkedHashMap<String, Object>();
+        body.put("username", patient.getUsername());
+        body.put("password", patient.getPassword());
+        body.put("email", patient.getUserEmail());
+        body.put("phone", patient.getPhoneNumber());
+        body.put("roleIds", roleIds);
+        body.put("age", patient.getAge());
+        body.put("address", patient.getAddress());
+        body.put("patientBalance", patient.GetBalance());
+        body.put("allergies", allergies);
+        OptionalInt id = postForInt("/api/patients", body);
+        return id.isPresent() ? id.getAsInt() : -1;
     }
-    //works fine
+
+    @Override
+    public int RemovePatient(int PatientID)  throws IllegalArgumentException{
+        if(GetPatient(PatientID) == null) {
+            throw new IllegalArgumentException("Patient not found, you should add patient first or check the id");
+        }
+        return delete("/api/patients/" + PatientID) ? 0 : -1;
+    }
+
+    @Override
+    public int UpdatePatient(int PatientID, Patient Newpatient)  throws IllegalArgumentException{
+        var body = new LinkedHashMap<String, Object>();
+        body.put("username", Newpatient.getUsername());
+        body.put("password", Newpatient.getPassword());
+        body.put("email", Newpatient.getUserEmail());
+        body.put("phone", Newpatient.getPhoneNumber());
+        body.put("isActive", Newpatient.getactive());
+        body.put("age", Newpatient.getAge());
+        body.put("address", Newpatient.getAddress());
+        body.put("patientBalance", Newpatient.GetBalance());
+        return putJson("/api/patients/" + PatientID, body) ? PatientID : -1;
+    }
+
+    @Override
+    public Patient GetPatient(int PatientID) {
+        var m = getJson("/api/patients/" + PatientID, ApiModels.MPatient.class).orElse(null);
+        if (m == null) {
+            return null;
+        }
+        Patient p = PharmacyJsonMapper.toPatient(gson, this, m);
+        p.setPassword("");
+        p.getOrders().clear();
+        p.getOrders().addAll(Order_Repository.getInstance().GetOrdersForPatient(PatientID));
+        return p;
+    }
+
     @Override
     public Set<Patient> GetAllPatients() {
-        // Convert the Set to a List and return it.
-        return PATIENTS;
+        Type t = BaseService.listOf(ApiModels.MPatient.class);
+        List<ApiModels.MPatient> list = (List<ApiModels.MPatient>) getJson("/api/patients", t).orElse(List.of());
+        Set<Patient> set = new HashSet<>();
+        for (var mp : list) {
+            Patient p = PharmacyJsonMapper.toPatient(gson, this, mp);
+            p.setPassword("");
+            set.add(p);
+        }
+        return set;
     }
-    
+
 }

@@ -11,6 +11,15 @@ module com.example.demo1 {
     requires eu.hansolo.tilesfx;
     requires com.almasb.fxgl.all;
 
+    requires java.net.http;
+    requires com.google.gson;
+
     opens com.example.demo1 to javafx.fxml;
+    opens Class_model to com.google.gson;
+    opens Http to com.google.gson;
+
     exports GUI;
+    exports Class_model;
+    exports Service_Interfaces;
+    exports Http;
 }

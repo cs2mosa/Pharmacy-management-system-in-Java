@@ -1,11 +1,15 @@
 package Service_Interfaces;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.OptionalInt;
 
 import Class_model.*;
+
+import Http.ApiModels;
+import Http.BaseService;
 
 /**
  * PaymentRepository is an abstract interface that defines the contract for managing payment operations.
@@ -41,7 +45,6 @@ abstract interface PaymentRepository {
     /**
      * Retrieves a payment from the repository by its unique identifier.
      * 
-     * @param PaymentId The unique identifier of the payment to be retrieved.
      * @return The Payment object corresponding to the given PaymentId.
      */
     List<Payment> GetById(int PatientId); 
@@ -62,110 +65,109 @@ abstract interface PaymentRepository {
     Payment GetPayment(int PaymentId); 
 }
 
-class Payment_Repository implements PaymentRepository {
-    // Singleton instance of Payment_Repository
+class Payment_Repository extends BaseService implements PaymentRepository {
     private static Payment_Repository instance = null;
-    // Map to store payments:-> Integer : UserId.
-    private static Map<Integer,List<Payment>> PAYMENTS; // Using Set for better search complexity
 
-    // Private constructor to prevent instantiation from outside
     private Payment_Repository() {
-        //private constructor for singleton design.
-        PAYMENTS = new HashMap<>(); 
     }
 
-    // Method to get the singleton instance of Payment_Repository
     public static PaymentRepository GetInstance(){
-        if(instance ==null){
-            instance  =  new Payment_Repository();
-            return instance;
+        if(instance == null){
+            instance = new Payment_Repository();
         }
-        else{
-            return instance;
-        }
+        return instance;
     }
 
-    //works fine
     @Override
     public int AddPayment(int PatientId, Payment payment) {
-        // Implementation to add a payment
-        if (payment == null ) throw new IllegalArgumentException("payment should be of type Payment");
-        if(Order_Service.getInstance().GetById(payment.getID()) == null) throw new IllegalArgumentException("Order not found, you should add order first or check the id");
-        if(Patient_Repository.getInstance().GetPatient(PatientId) == null) throw new IllegalArgumentException("Patient not found, you should add patient first or check the id");
-        if(PAYMENTS.containsKey(PatientId)){
-            List<Payment> payments = PAYMENTS.get(PatientId);
-            if(payments == null) return -1;
-            for(Payment p : payments){
-                if(p.getID() == payment.getID()){
-                    return -1; // Payment already exists, return -1
-                }
-            }
-            payments.add(payment);
-        }else{
-            List<Payment> payments = new ArrayList<>();
-            payments.add(payment);
-            PAYMENTS.put(PatientId, payments);
+        if (payment == null ) {
+            throw new IllegalArgumentException("payment should be of type Payment");
         }
-        // Set the payment ID and status
+        int orderId = payment.getID();
+        if(Order_Service.getInstance().GetById(orderId) == null) {
+            throw new IllegalArgumentException("Order not found, you should add order first or check the id");
+        }
+        if(Patient_Repository.getInstance().GetPatient(PatientId) == null) {
+            throw new IllegalArgumentException("Patient not found, you should add patient first or check the id");
+        }
+        var body = new LinkedHashMap<String, Object>();
+        body.put("orderId", orderId);
+        body.put("amount", payment.getAmount());
+        body.put("paymentDate", null);
+        body.put("paymentMethod", payment.getPaymethod());
+        body.put("status", "Pending");
+        OptionalInt newId = postForInt("/api/payments", body);
+        if (newId.isEmpty()) {
+            return -1;
+        }
+        payment.setID(newId.getAsInt());
         payment.setStatus("Pending");
-        return payment.getID();
+        return newId.getAsInt();
     }
 
-    //works fine.
     @Override
     public int DeletePayment(int PatientId, int PaymentId) {
-        // Implementation to withdraw a payment by ID
-        if (Patient_Repository.getInstance().GetPatient(PatientId) == null)
+        if (Patient_Repository.getInstance().GetPatient(PatientId) == null) {
             throw new IllegalArgumentException("Patient not found, you should add patient first or check the id");
-        if(Payment_Repository.GetInstance().GetById(PatientId) == null)
-            return -1;
-        if(PAYMENTS.containsKey(PatientId)){
-            List<Payment> payments =  PAYMENTS.get(PatientId);
-            payments.removeIf(payment -> payment.getID() == PaymentId);
-            return 0;
         }
-        else{
-            return -1; // Payment not found, return -1
-        }
+        return delete("/api/payments/" + PaymentId) ? 0 : -1;
     }
 
-    //works fine
     @Override
     public int UpdatePayment(int PatientId, Payment Newpayment) {
-        // Implementation to update payment details
-        DeletePayment(PatientId, Newpayment.getID());
-        return AddPayment(PatientId, Newpayment);
+        var body = new LinkedHashMap<String, Object>();
+        body.put("amount", Newpayment.getAmount());
+        body.put("paymentDate", Newpayment.getPayday());
+        body.put("paymentMethod", Newpayment.getPaymethod());
+        body.put("status", Newpayment.getStatus());
+        return putJson("/api/payments/" + Newpayment.getID(), body) ? Newpayment.getID() : -1;
     }
 
-    //not used
     @Override
     public List<Payment> GetById(int PatientId) {
-        // Implementation to get a payment by ID
-        return PAYMENTS.get(PatientId); 
+        Type t = BaseService.listOf(ApiModels.MPayment.class);
+        List<ApiModels.MPayment> list = (List<ApiModels.MPayment>) getJson("/api/payments/patient/" + PatientId, t).orElse(List.of());
+        List<Payment> out = new ArrayList<>();
+        for (var m : list) {
+            out.add(mapPayment(m));
+        }
+        return out;
     }
 
-    //not used
     @Override  
     public List<Payment> GetAllPayments() {
-        // Implementation to get all payments
-        List<Payment> allPayments = new ArrayList<>();
-        for(List<Payment> paymentList : PAYMENTS.values()){
-            allPayments.addAll(paymentList);
+        Type t = BaseService.listOf(ApiModels.MPayment.class);
+        List<ApiModels.MPayment> list = (List<ApiModels.MPayment>) getJson("/api/payments", t).orElse(List.of());
+        List<Payment> out = new ArrayList<>();
+        for (var m : list) {
+            out.add(mapPayment(m));
         }
-        return allPayments;
+        return out;
     }
 
-    //works fine
     @Override
     public Payment GetPayment(int PaymentId) {
-        // Implementation to get a payment by ID
-        for(List<Payment> paymentList : PAYMENTS.values()){
-            for(Payment payment : paymentList){
-                if(payment.getID() == PaymentId){
-                    return payment;
-                }
-            }
+        return getJson("/api/payments/" + PaymentId, ApiModels.MPayment.class)
+                .map(this::mapPayment)
+                .orElse(null);
+    }
+
+    private Payment mapPayment(ApiModels.MPayment m) {
+        var order = Order_Repository.getInstance().GetById(m.orderId);
+        if (order == null) {
+            order = new Order.builder()
+                    .setOrderId(m.orderId)
+                    .setOrderItems(new ArrayList<>())
+                    .setTotalPrice(0)
+                    .setStatus("")
+                    .setOrderDate("")
+                    .build();
         }
-        return null; // Placeholder return statement if not found
+        String payday = m.paymentDate != null ? m.paymentDate : "";
+        Payment p = new Payment(m.paymentId, m.amount, payday, m.paymentMethod != null ? m.paymentMethod : "", order);
+        if (m.status != null) {
+            p.setStatus(m.status);
+        }
+        return p;
     }
 }

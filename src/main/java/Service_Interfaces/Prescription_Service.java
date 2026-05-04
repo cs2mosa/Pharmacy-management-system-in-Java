@@ -99,11 +99,9 @@ public class Prescription_Service implements PrescriptionServiceInterface {
     }
     public static Prescription_Service getInstance(){
         if(instance == null){
-            return new Prescription_Service();
+            instance = new Prescription_Service();
         }
-        else{
-            return instance;
-        }
+        return instance;
     }
 
     //works fine

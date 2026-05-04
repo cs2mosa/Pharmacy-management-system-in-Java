@@ -8,9 +8,9 @@ import java.util.Set;
  */
 public abstract class User {
      /**
-     * The ID of the user.
+     * The ID of the user (per-instance; backed by the database when using the API).
      */
-    private static int UserId;
+    private int userId;
     /**
      * The username of the user.
      */
@@ -51,7 +51,7 @@ public abstract class User {
      * @param Roles      The set of roles assigned to the user.
      */
     public User(int UserId,String Username, String Password, String User_Email, String PhoneNumber, Set<Role> Roles) {
-        User.UserId = UserId;
+        this.userId = UserId;
         this.Username = Username;
         this.Password = Password;
         this.UserEmail = User_Email;
@@ -72,7 +72,7 @@ public abstract class User {
      * @param ID The new Id.
      */
     public void setID(int ID) {
-        User.UserId = ID;
+        this.userId = ID;
     }
 
     /**
@@ -81,7 +81,7 @@ public abstract class User {
      * @return The ID.
      */
     public int getID() {
-        return UserId;
+        return userId;
     }
 
     /**

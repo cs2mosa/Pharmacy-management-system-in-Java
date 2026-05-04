@@ -187,10 +187,10 @@ public class Patient_Service implements PatientServiceInterface {
     @Override
     public List<Order> GetPatientOrders(int PatientId) {
         try {
-            Patient patient = Patient_Repository.getInstance().GetPatient(PatientId);
-            if (patient == null)
+            if (Patient_Repository.getInstance().GetPatient(PatientId) == null) {
                 return null;
-            return patient.getOrders();
+            }
+            return Order_Repository.getInstance().GetOrdersForPatient(PatientId);
         } catch (Exception e) {
             System.err.println("Error retrieving patient orders: " + e.getMessage());
             return null;
@@ -279,14 +279,11 @@ public class Patient_Service implements PatientServiceInterface {
     @Override
     public boolean AuthenticatePatient(String PatientName, String Password) {
         try {
-            Patient patient = GetPatient(PatientName);
-            if (patient == null) {
-                throw new IllegalArgumentException("Patient not found.");
-            }
-            if (Password == null || patient.getPassword() == null) {
+            if (Password == null || Password.isEmpty()) {
                 throw new IllegalArgumentException("Password cannot be null.");
             }
-            return patient.getPassword().equals(Password);
+            var logged = User_Repository.GetInstance().apiLogin(PatientName, Password);
+            return logged != null && "Patient".equalsIgnoreCase(logged.userKind);
         } catch (Exception e) {
             System.err.println("Authentication failed: " + e.getMessage());
             return false;

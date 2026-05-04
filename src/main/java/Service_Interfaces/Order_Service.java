@@ -164,7 +164,7 @@ public class Order_Service implements OrderServiceInterface {
         // Implementation for calculating total income from orders
         long x = 0;
         for(Order o : Order_Repository.getInstance().GetHistory()){
-            if(o.getStatus() == "Paid"){
+            if("Paid".equals(o.getStatus())){
                 x += o.getTotalPrice();
             }
         }
@@ -180,7 +180,7 @@ public class Order_Service implements OrderServiceInterface {
         if(Inventory_service.getInstance().GetItemByName(ItemName) == null) return -1;
         for(Item item : order.getOrderItems()){
             if(item == null) return -1;
-            if(item.getMedicName() == ItemName){
+            if(ItemName != null && ItemName.equals(item.getMedicName())){
                 order.removeItem(item);
                 break;
             }

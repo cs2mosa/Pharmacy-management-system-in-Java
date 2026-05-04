@@ -17,6 +17,9 @@ import java.util.Set;
  * Represents an item with details such as name, category, price, quantity, and effects.
  */
 public class Item implements Comparable<Item> {
+    /** Database medicine id when using the REST API; -1 if unknown. */
+    private int medicineId = -1;
+
     // The quantity of the item in stock.
     private int quantity;
 
@@ -56,7 +59,12 @@ public class Item implements Comparable<Item> {
      * @param side_effects   The side effects of the item.
      * @param healing_effects The healing effects of the item.
      */
+    /** Gson / persistence */
+    public Item() {
+    }
+
     private Item(builder builder) {
+        this.medicineId = builder.medicineId;
         this.medic_name = builder.medic_name;
         this.expire_date = builder.expire_date;
         this.quantity = builder.quantity;
@@ -163,6 +171,14 @@ public class Item implements Comparable<Item> {
      *
      * @param medic_name The name of the medicine.
      */
+    public int getMedicineId() {
+        return medicineId;
+    }
+
+    public void setMedicineId(int medicineId) {
+        this.medicineId = medicineId;
+    }
+
     public void setMedicName(String medic_name) {
         this.medic_name = medic_name;
     }
@@ -250,6 +266,7 @@ public class Item implements Comparable<Item> {
      */
     public static class builder{
         //data fields.
+        private int medicineId = -1;
         private int quantity;
         private double price;
         private String category;
@@ -263,6 +280,10 @@ public class Item implements Comparable<Item> {
         //setters for builder class.
         public builder set_Refundable( boolean is_Refundable) {
             this.is_refundable = is_Refundable;
+            return this;
+        }
+        public builder setMedicineId(int medicineId) {
+            this.medicineId = medicineId;
             return this;
         }
         public builder setMedicName(String medic_name) {
