@@ -2,6 +2,7 @@ package GUI;
 
 import Class_model.Item;
 import Service_Interfaces.Inventory_service;
+import Service_Interfaces.Patient_Service;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
